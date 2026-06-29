@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import select
 from database import SessionDep, create_db_and_tables
-from rds_model import Course
-from models import CourseCreatePayload, UpdateCoursePayload
+from rds_model import Course , Student
+from models import CourseCreatePayload, UpdateCoursePayload , StudentCreatePayload , UpdateStudentPayload
 from contextlib import asynccontextmanager
 
 @asynccontextmanager
@@ -20,7 +20,7 @@ server = FastAPI(
  lifespan=lifespan
 )
 
-
+### COURSES ###
 @server.get("/") # Register a GET method for / route
 def root():
     return {"message": "Go to /docs to see the API documentation"}
@@ -39,6 +39,7 @@ def get_course_by_id(course_id: int, session: SessionDep):
 
 @server.post("/courses", status_code=201)
 def create_new_course(payload: CourseCreatePayload, session: SessionDep):
+    
     new_course = Course(
         course_name=payload.course_name,
         course_difficulty=payload.course_difficulty,
@@ -46,7 +47,7 @@ def create_new_course(payload: CourseCreatePayload, session: SessionDep):
 
     session.add(new_course)
     session.commit()
-    session.refresh(new_course)
+    session.refresh(new_course)     # gives updated db with auto incremneted id
 
     return {"data": new_course, "message": "New course created"}
 
@@ -77,3 +78,73 @@ def delete_course(id: int, session: SessionDep):
     session.commit()
 
     return {"message": "Course removed"}
+
+
+### STUDENTS ###
+
+@server.get("/students")
+def get_all_students(session:SessionDep):
+    return session.scalars(select(Student)).all()
+
+@server.get("/students/{student_id}")
+def get_student_byid(id : int , session : SessionDep):
+    student=session.get(Student,id)
+    if not student:
+        raise HTTPException(status_code=404 , detail="Student not found")
+    return {"data":student}
+
+
+@server.post("/students", status_code=201)
+def create_new_student(payload: StudentCreatePayload, session: SessionDep):
+    
+    new_student = Student(
+        student_id = payload.student_id,
+        name = payload.name,
+        age = payload.age,
+        address = payload.address,
+        email =payload.email,
+        phone = payload.phone
+    )
+
+    session.add(new_student)
+    session.commit()
+    session.refresh(new_student)     # gives updated db with auto incremneted id
+
+    return {"data": new_student, "message": "New student created"}
+
+
+@server.patch("/students/{student_id}")
+def update_student(student_id: int, payload: UpdateStudentPayload, session: SessionDep):
+    student = session.get(Student, student_id)
+    if not student:
+        return {"message": "No student found with the given id"}
+
+    if payload.name:
+        student.name = payload.name
+    if payload.age:
+        student.age = payload.age
+    if payload.address:
+        student.address = payload.address
+    if payload.email:
+        student.email = payload.email
+    if payload.phone:
+        student.phone = payload.phone
+
+    session.commit()
+    session.refresh(student)
+
+    return {"message": "Student Updated", "data": student}
+
+@server.delete("/student/{student_id}")
+def delete_course(student_id: int, session: SessionDep):
+    student = session.get(Student, student_id)
+    if not student:
+        return {"message": "Student not found"}
+
+    session.delete(student)
+    session.commit()
+
+    return {"message": "Student removed"}
+
+    
+

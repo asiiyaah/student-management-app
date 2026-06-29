@@ -7,9 +7,9 @@ from rds_model import Base
 
 # SQLite configuration
 sqlite_url = "sqlite:///courses.db"
-engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
-
-SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+engine = create_engine(sqlite_url, connect_args={"check_same_thread": False},echo=True)
+                                         
+SessionLocal = sessionmaker(bind=engine, expire_on_commit=False , autoflush=False)
 
 # Initial migration to create database and tables
 def create_db_and_tables():
